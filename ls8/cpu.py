@@ -7,6 +7,33 @@ class CPU:
 
     def __init__(self):
         """Construct a new CPU."""
+        # special registers
+        # general purpose registers(reg)
+        # program stack(ram)
+        # self.ram
+        # self.reg
+        # R5 = im
+        # R6 = is
+        # R7 = sp(stack pointer)
+        # self.pc(program counter) location of the ith instruction
+
+        # self.ir(instruction register) the instruction as data
+
+        
+        # self.mar(memory address register) the memory address of 
+        # what we are reading from or writing to
+
+        # self.mdr (memory data register) the value we are going to write or what we just read
+
+
+        # 8 bits representing each flag
+        # self.fl
+        # self.command_branch_table
+
+
+        # self.address (pc for example program)
+        # self.program
+
         pass
 
     def load(self):
