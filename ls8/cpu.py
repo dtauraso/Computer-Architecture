@@ -33,7 +33,8 @@ class CPU:
             # opcode
             0b10000010: self.ldi,
             0b01000111: self.prn,
-            0b10100000: self.add,
+            0b10100010: self.mul
+            # 0b10100000: self.add,
             
 
         }
@@ -63,7 +64,8 @@ class CPU:
 
         pass
 
-    def load(self):
+    
+    def load2(self):
         """Load a program into memory."""
 
         self.pc = 0
@@ -83,17 +85,38 @@ class CPU:
         # for instruction in program:
         #     self.ram[address] = instruction
         #     address += 1
+    def load(self, file_name):
 
-    def add(self):
+        with open(file_name,'r') as fh:
+            all_lines = fh.readlines()
+        [print(i) for i in all_lines]
+        code = []
+        for line in all_lines:
+            processed_line = line.split(' ')[0]
+            code.append(int(processed_line, 2))
+        print('code')
+        [print(f'{i:>08b}') for i in code]
+        self.program_entry = code
+    # def add(self):
 
-        # use internal registers for this too
+    #     # use internal registers for this too
+    #     reg_a = self.program_entry[self.pc + 1]
+    #     reg_b = self.program_entry[self.pc + 2]
+        # self.mdr &= 0xff
+    #     self.ram_write(reg_a, self.reg[reg_a] + self.reg[reg_b])
+
+    #     # set pc to the next instruction
+    #     self.pc += 3
+    def mul(self):
         reg_a = self.program_entry[self.pc + 1]
         reg_b = self.program_entry[self.pc + 2]
-
-        self.ram_write(reg_a, self.reg[reg_a] + self.reg[reg_b])
-
-        # set pc to the next instruction
+        self.mar = reg_a
+        print(reg_a, reg_b)
+        self.mdr = self.reg[reg_a] * self.reg[reg_b]
+        self.mdr &= 0xff
+        self.ram_write(reg_a, self.mdr)
         self.pc += 3
+
     def ldi(self):
         register = self.program_entry[self.pc + 1]
         immediate_value = self.program_entry[self.pc + 2]
@@ -117,8 +140,10 @@ class CPU:
         else:
             raise Exception("Unsupported ALU operation")
     def ram_read(self, address):
+        print(address)
         return self.reg[address]
-    
+    # there was something in the specs to use #FF on a result or register
+    # to prevent overflow
     def ram_write(self, address, new_value):
         self.reg[address] = new_value
 
@@ -132,6 +157,7 @@ class CPU:
             self.pc,
             #self.fl,
             #self.ie,
+            # assumes everything is in ram
             self.ram_read(self.pc),
             self.ram_read(self.pc + 1),
             self.ram_read(self.pc + 2)
@@ -144,13 +170,15 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
-
+        print('start cpu')
+        counter = 0
         while True:
 
 
             # the first insturction is always an opcode
             opcode = self.program_entry[self.pc]
             self.ir = opcode
+            print(f'{counter}: {self.ir:>08b}')
             if opcode == self.hlt:
                 break
 
@@ -160,5 +188,8 @@ class CPU:
                 self.command_branch_table[opcode]()
             else:
                 print(f'{opcode} is an invalid opcode')
+                break
+            # self.trace()
+            counter += 1
 
         # pass
