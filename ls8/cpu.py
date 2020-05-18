@@ -14,7 +14,14 @@ class CPU:
         self.program_entry = []
         self.stack = []
         # make 8 empty registers
-        self.reg = ['00000000'] * 8
+        self.reg = [0b00000000] * 8
+        self.hlt =0b00000001
+        self.pc = 0
+        self.flags = 0b00000000
+        self.command_branch_table = {
+            0b10100000: self.add
+        }
+
         # self.stack(for data the program uses outside the registers)
         # self.reg
         # R5 = im
@@ -33,7 +40,6 @@ class CPU:
 
         # 8 bits representing each flag
         # self.fl
-        # self.command_branch_table
 
         # for example program
         # self.address
@@ -62,6 +68,15 @@ class CPU:
             self.ram[address] = instruction
             address += 1
 
+    def add(self):
+
+        reg_a = self.program_entry[self.pc + 1]
+        reg_b = self.program_entry[self.pc + 2]
+
+        self.ram_write(reg_a, self.reg[reg_a] + self.reg[reg_b])
+
+        # set pc to the next instruction
+        self.pc += 3
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
@@ -100,10 +115,20 @@ class CPU:
     def run(self):
         """Run the CPU."""
 
-        # get the instruction
-        # parse the instruction for the function
-            # find the function to run
-            # run the function
-                # the function may or may not incrememnt the pc
-        
-        pass
+        while True:
+
+
+            # the first insturction is always an opcode
+            opcode = self.program_entry[self.pc]
+
+            if opcode == self.hlt:
+                break
+
+            # the argument collecting for the operation is done inside the operation
+            # the pc is also advanced inside the operation
+            elif opcode in self.command_branch_table:
+                self.command_branch_table[opcode]()
+            else:
+                print(f'{opcode} is an invalid opcode')
+
+        # pass
