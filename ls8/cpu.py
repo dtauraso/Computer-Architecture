@@ -9,8 +9,13 @@ class CPU:
         """Construct a new CPU."""
         # special registers
         # general purpose registers(reg)
-        # program stack(ram)
+        # program (ram)
         # self.ram
+        self.program_entry = []
+        self.stack = []
+        # make 8 empty registers
+        self.reg = ['00000000'] * 8
+        # self.stack(for data the program uses outside the registers)
         # self.reg
         # R5 = im
         # R6 = is
@@ -30,8 +35,8 @@ class CPU:
         # self.fl
         # self.command_branch_table
 
-
-        # self.address (pc for example program)
+        # for example program
+        # self.address
         # self.program
 
         pass
@@ -66,6 +71,11 @@ class CPU:
         #elif op == "SUB": etc
         else:
             raise Exception("Unsupported ALU operation")
+    def ram_read(self, address):
+        return self.ram[address]
+    
+    def ram_write(self, address, new_value):
+        self.ram[address] = new_value
 
     def trace(self):
         """
@@ -89,4 +99,11 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
+
+        # get the instruction
+        # parse the instruction for the function
+            # find the function to run
+            # run the function
+                # the function may or may not incrememnt the pc
+        
         pass
