@@ -11,8 +11,9 @@ class CPU:
         # general purpose registers(reg)
         # program (ram)
         # self.ram
-        self.program_entry = []
-        self.stack = []
+
+        self.ram = []
+        # stack pointer is the last gen register
 
         # make 8 empty registers
         self.reg = [0b00000000] * 8
@@ -72,7 +73,7 @@ class CPU:
 
         # For now, we've just hardcoded a program:
 
-        self.program_entry = [
+        self.ram = [
             # From print8.ls8
             0b10000010, # LDI R0,8
             0b00000000,
@@ -93,10 +94,11 @@ class CPU:
         code = []
         for line in all_lines:
             processed_line = line.split(' ')[0]
-            code.append(int(processed_line, 2))
+            if processed_line != '#' and processed_line != '\n':
+                code.append(int(processed_line, 2))
         print('code')
         [print(f'{i:>08b}') for i in code]
-        self.program_entry = code
+        self.ram = code
     # def add(self):
 
     #     # use internal registers for this too
@@ -108,28 +110,30 @@ class CPU:
     #     # set pc to the next instruction
     #     self.pc += 3
     def mul(self):
-        reg_a = self.program_entry[self.pc + 1]
-        reg_b = self.program_entry[self.pc + 2]
+        reg_a = self.ram[self.pc + 1]
+        reg_b = self.ram[self.pc + 2]
         self.mar = reg_a
         print(reg_a, reg_b)
         self.mdr = self.reg[reg_a] * self.reg[reg_b]
         self.mdr &= 0xff
-        self.ram_write(reg_a, self.mdr)
+        self.reg[reg_a] = self.mdr
+        # self.ram_write(reg_a, self.mdr)
         self.pc += 3
 
     def ldi(self):
-        register = self.program_entry[self.pc + 1]
-        immediate_value = self.program_entry[self.pc + 2]
+        register = self.ram[self.pc + 1]
+        immediate_value = self.ram[self.pc + 2]
 
-        self.ram_write(register, immediate_value)
+        self.reg[register] = immediate_value
+        # self.ram_write(register, immediate_value)
         # setting here so the operation is easier to read
         self.mar = register
         self.mdr = immediate_value
         self.pc += 3
     def prn(self):
-        register_number = self.program_entry[self.pc + 1]
+        register_number = self.ram[self.pc + 1]
         self.mar = register_number
-        print(self.ram_read(register_number))
+        print(self.reg[register_number])
         self.pc += 2
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
@@ -141,11 +145,11 @@ class CPU:
             raise Exception("Unsupported ALU operation")
     def ram_read(self, address):
         print(address)
-        return self.reg[address]
+        return self.ram[address]
     # there was something in the specs to use #FF on a result or register
     # to prevent overflow
     def ram_write(self, address, new_value):
-        self.reg[address] = new_value
+        self.ram[address] = new_value
 
     def trace(self):
         """
@@ -176,7 +180,7 @@ class CPU:
 
 
             # the first insturction is always an opcode
-            opcode = self.program_entry[self.pc]
+            opcode = self.ram[self.pc]
             self.ir = opcode
             print(f'{counter}: {self.ir:>08b}')
             if opcode == self.hlt:
