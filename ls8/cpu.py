@@ -4,7 +4,7 @@ import sys
 
 # for branch table in ALU
 multiply_opcode = 0b10100010
-
+add_opcode = 0b10100000
 stack_pointer = 7
 class CPU:
     """Main CPU class."""
@@ -47,16 +47,21 @@ class CPU:
             0b10000010: self.ldi,
             0b01000111: self.prn,
             0b01000101: self.push,
+            0b01010000: self.call,
             0b01000110: self.pop,
+            0b00010001: self.ret,
+
 
             # multiply
-            multiply_opcode: self.setup_for_alu
+            multiply_opcode: self.setup_for_alu,
+            add_opcode: self.setup_for_alu
             # 0b10100000: self.add,
             
 
         }
         self.alu_branch_table = {
-            multiply_opcode: self.mul
+            multiply_opcode: self.mul,
+            add_opcode: self.add
         }
 
         # self.stack(for data the program uses outside the registers)
@@ -123,18 +128,9 @@ class CPU:
         for i, line in enumerate(code):
             self.ram[i] = line
         self.last_line_in_program = len(code) - 1
-    # def add(self):
-
-    #     # use internal registers for this too
-    #     reg_a = self.program_entry[self.pc + 1]
-    #     reg_b = self.program_entry[self.pc + 2]
-        # self.mdr &= 0xff
-    #     self.ram_write(reg_a, self.reg[reg_a] + self.reg[reg_b])
-
-    #     # set pc to the next instruction
-    #     self.pc += 3
     def get_the_argument_count(self):
         opcode = self.ram[self.pc]
+        # right shift the highest 2 bits by 6
         return (opcode & 0b11000000) >> 6
 
     def push(self):
@@ -150,6 +146,20 @@ class CPU:
         self.ram[ self.reg[stack_pointer] ] = register_value
         self.pc += self.get_the_argument_count() + 1
 
+    def call(self):
+        register_number = self.ram[self.pc + 1]
+        address_of_next_instruction = self.pc + 2
+
+        # push
+        self.reg[stack_pointer] -= 1
+
+        self.ram[ self.reg[stack_pointer] ] = address_of_next_instruction
+
+        # save the value in the given register to the program counter
+        self.pc = self.reg[register_number]
+
+
+        # the address of the next instruction is pushed onto the stack
     def pop(self):
 
         register_number = self.ram[self.pc + 1]
@@ -162,6 +172,14 @@ class CPU:
 
         self.pc += self.get_the_argument_count() + 1
 
+    def ret(self):
+
+        # pop the value from the top of the stack and store it in the pc
+        self.pc = self.ram[ self.reg[stack_pointer] ]
+
+        #increment sp
+        self.reg[stack_pointer] += 1
+    
     def ldi(self):
         register = self.ram[self.pc + 1]
         immediate_value = self.ram[self.pc + 2]
@@ -177,6 +195,22 @@ class CPU:
         register_number = self.ram[self.pc + 1]
         self.mar = register_number
         print(self.reg[register_number])
+        self.pc += self.get_the_argument_count() + 1
+
+    def add(self):
+
+        # use internal registers for this too
+        reg_a = self.ram[self.pc + 1]
+        reg_b = self.ram[self.pc + 2]
+
+        self.mar = reg_a
+        self.mdr = self.reg[reg_a] + self.reg[reg_b]
+
+
+        self.mdr &= 0xff
+        self.reg[reg_a] = self.mdr
+
+        # set pc to the next instruction
         self.pc += self.get_the_argument_count() + 1
 
     def mul(self):
