@@ -5,7 +5,12 @@ import sys
 # for branch table in ALU
 multiply_opcode = 0b10100010
 add_opcode = 0b10100000
+
+# last 3 general purpose registers
+interrupt_mask = 5
+interrupt_status = 6
 stack_pointer = 7
+
 class CPU:
     """Main CPU class."""
 
@@ -40,7 +45,10 @@ class CPU:
         self.mdr = 0b00000000
         self.flags = 0b00000000
 
-
+        # 2 interrupt branch functions
+        # 1 interrupt setup in run
+        # 1 interrupt detector flag
+        # 1 table of interrupts
         # opcode -> function table
         self.command_branch_table = {
             # opcode
@@ -50,6 +58,10 @@ class CPU:
             0b01010000: self.call,
             0b01000110: self.pop,
             0b00010001: self.ret,
+
+            # tell us the interrupt to process
+            0b01010010: self.interupt,
+            0b00010011: self.iret,
 
 
             # multiply
@@ -63,6 +75,13 @@ class CPU:
             multiply_opcode: self.mul,
             add_opcode: self.add
         }
+
+        self.interrupt_vector_table = {
+            0b00000001: 'timer interrupt',
+            0b00000010: 'keyboard interrupt'
+        }
+        # Don't know how to setup interrupts yet
+        self.active_interrupts = False
 
         # self.stack(for data the program uses outside the registers)
         # self.reg
@@ -115,6 +134,10 @@ class CPU:
 
     def push(self):
         register_number = self.ram[self.pc + 1]
+
+        if self.reg[stack_pointer] - 1 == self.last_line_in_program:
+            print('we have a stack overflow')
+
         # decrement the stack pointer
         self.reg[stack_pointer] -= 1
         # copy the value in the given register to the address pointed to by the stack pointer
@@ -128,6 +151,9 @@ class CPU:
 
     def call(self):
         register_number = self.ram[self.pc + 1]
+
+        # the address of the next instruction is pushed onto the stack
+
         address_of_next_instruction = self.pc + 2
 
         # push
@@ -139,7 +165,6 @@ class CPU:
         self.pc = self.reg[register_number]
 
 
-        # the address of the next instruction is pushed onto the stack
     def pop(self):
 
         register_number = self.ram[self.pc + 1]
@@ -159,7 +184,41 @@ class CPU:
 
         #increment sp
         self.reg[stack_pointer] += 1
-    
+
+    # not tested
+    def interupt(self):
+        register_number = self.ram[self.pc + 1]
+        interrupt_number = self.reg[register_number]
+
+        _nth_th_bit = 0b00000001 << interrupt_number
+
+        # turn on the interrupt bit without modifying
+        # the other bits
+        self.reg[interrupt_status] |= _nth_th_bit
+
+        # move cp?
+    # not tested
+    def iret(self):
+
+        # pop the registers
+        ith_register = 6
+        while ith_register >= 0:
+
+            self.reg[ith_register] = self.ram[ self.reg[stack_pointer] ]
+
+            #increment sp
+            self.reg[stack_pointer] += 1
+        
+        # pop the flag register
+        self.fl = self.ram[ self.reg[stack_pointer] ]
+        self.reg[stack_pointer] += 1
+
+        # pop the pc
+        self.pc = self.ram[ self.reg[stack_pointer] ]
+
+        # reactivate interrups
+        self.active_interrupts = True
+
     def ldi(self):
         register = self.ram[self.pc + 1]
         immediate_value = self.ram[self.pc + 2]
@@ -255,21 +314,77 @@ class CPU:
         counter = 0
         while True:
 
+            # when interrupt occurres from an external source
+            # external source:
+                # do we look for keyboard input before checking the instructions?
 
-            # the first insturction is always an opcode
-            opcode = self.ram[self.pc]
-            self.ir = opcode
-            # print(f'{counter}: {self.ir:>08b}')
-            if opcode == self.hlt:
-                break
+            # or from an interrupt instruction
+                # figure out what interupt it was
+            # if it was an interrupt
+                # turn off further interrupts(self.active_interrupts)
+                # save data from registers to the stack
+                # set pc to handler address
 
-            # the argument collecting for the operation is done inside the operation
-            # the pc is also advanced inside the operation
-            elif opcode in self.command_branch_table:
-                self.command_branch_table[opcode]()
+            #             if self.active_interrupts:
+            #     # figure out what interrupt whould be 
+            # else:
+            # just for the interrupt instruction
+            # How do I know when the interrupt may occurr?
+            # Is this supposed to detect an interrupt after the command was run
+            # last round?
+            if self.active_interrupts:
+                maskedInterrupts = self.reg[interrupt_mask] & self.reg[interrupt_status]
+
+                # find the first bit set in
+                i = 0b00000001
+                while (maskedInterrupts & i) == 0:
+                    i <<= 1
+
+                # an_interrupt_is_set
+                if(maskedInterrupts & i) > 0:
+                    self.active_interrupts = False
+                    self.reg[interrupt_status] = 0b00000000
+
+                    # push pc to stack
+                    self.reg[stack_pointer] -= 1
+                    self.ram[ self.reg[stack_pointer] ] = self.pc
+                    
+                    # push fl to stack
+                    self.reg[stack_pointer] -= 1
+                    self.ram[ self.reg[stack_pointer] ] = self.pc
+
+                    # push registers to memory
+                    ith_register = 0
+                    while ith_register < 6:
+
+                        # decrement sp
+                        self.reg[stack_pointer] -= 1
+
+                        self.reg[ith_register] = self.ram[ self.reg[stack_pointer] ]
+
+                        # find the correct interrupt handler
+
+                        self.interrupt_vector_table[maskedInterrupts & i]
+                        # set the pc to the handler address
+                        # how?
+                        # where?
+
             else:
-                print(f'{opcode} is an invalid opcode')
-                break
+
+                # the first insturction is always an opcode
+                opcode = self.ram[self.pc]
+                self.ir = opcode
+                # print(f'{counter}: {self.ir:>08b}')
+                if opcode == self.hlt:
+                    break
+
+                # the argument collecting for the operation is done inside the operation
+                # the pc is also advanced inside the operation
+                elif opcode in self.command_branch_table:
+                    self.command_branch_table[opcode]()
+                else:
+                    print(f'{opcode} is an invalid opcode')
+                    break
             # self.trace()
             counter += 1
 
