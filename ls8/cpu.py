@@ -6,6 +6,10 @@ import sys
 multiply_opcode = 0b10100010
 add_opcode = 0b10100000
 
+# fake opcode
+add_i_opcode = 0b10100001
+
+
 # last 3 general purpose registers
 interrupt_mask = 5
 interrupt_status = 6
@@ -76,8 +80,9 @@ class CPU:
 
             # multiply
             multiply_opcode: self.setup_for_alu,
-            add_opcode: self.setup_for_alu
-            # 0b10100000: self.add,
+            add_opcode: self.setup_for_alu,
+
+            add_i_opcode: self.addi
             
 
         }
@@ -317,6 +322,19 @@ class CPU:
         # set pc to the next instruction
         self.pc += self.get_the_argument_count() + 1
 
+    def addi(self):
+        reg_a = self.ram[self.pc + 1]
+        immedidate_value = self.ram[self.pc + 2]
+
+        self.mar = reg_a
+        self.mdr = self.reg[reg_a] + immedidate_value
+        self.mdr &= 0xff
+        self.reg[reg_a] = self.mdr
+
+        self.pc += self.get_the_argument_count() + 1
+
+
+ 
     def mul(self):
         reg_a = self.ram[self.pc + 1]
         reg_b = self.ram[self.pc + 2]
