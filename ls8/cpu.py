@@ -185,7 +185,7 @@ class CPU:
         #increment sp
         self.reg[stack_pointer] += 1
 
-    # not tested
+    # not tested(not used)
     def interupt(self):
         register_number = self.ram[self.pc + 1]
         interrupt_number = self.reg[register_number]
@@ -197,6 +197,7 @@ class CPU:
         self.reg[interrupt_status] |= _nth_th_bit
 
         # move cp?
+
     # not tested
     def iret(self):
 
@@ -216,7 +217,10 @@ class CPU:
         # pop the pc
         self.pc = self.ram[ self.reg[stack_pointer] ]
 
-        # reactivate interrups
+        self.reg[stack_pointer] += 1
+
+
+        # reactivate interrupts
         self.active_interrupts = True
 
     def ldi(self):
@@ -364,7 +368,7 @@ class CPU:
 
                         # find the correct interrupt handler
 
-                        self.interrupt_vector_table[maskedInterrupts & i]
+                        # self.interrupt_vector_table[maskedInterrupts & i]
                         # set the pc to the handler address
                         # how?
                         # where?
