@@ -63,6 +63,11 @@ class CPU:
             0b01010010: self.interupt,
             0b00010011: self.iret,
 
+            0b10100111: self.cmp,
+            0b01010100: self.jmp,
+            0b01010101: self.jeq,
+            0b01010110: self.jne,
+
 
             # multiply
             multiply_opcode: self.setup_for_alu,
@@ -115,12 +120,13 @@ class CPU:
             all_lines = fh.readlines()
         # [print(i) for i in all_lines]
         code = []
-        ignore_lines = ['#', '\n', '']
+        ignore_lines = ['#', '\n', '', '#\n']
         for line in all_lines:
             processed_line = line.split(' ')[0]
+            # print(f'|{processed_line}|')
             if processed_line not in ignore_lines:
                 code.append(int(processed_line, 2))
-        # print('code')
+        # print('code', code)
         # [print(f'{i:>08b}') for i in code]
         # store code in ram 0 to len(code) - 1
 
@@ -223,6 +229,77 @@ class CPU:
         # reactivate interrupts
         self.active_interrupts = True
 
+    def update_comparison_flag(self, flag):
+        if flag == 'equal':
+            equal_flag = 0b00000001
+
+            # add the bit
+            self.flags |= equal_flag
+
+            # deactivate the other 2 bits
+            self.flags &= equal_flag
+
+        if flag == 'greater than':
+
+            greater_than_flag = 0b00000010
+
+            # add the bit
+            self.flags |= greater_than_flag
+
+            # deactivate the other 2 bits
+            self.flags &= greater_than_flag
+    
+        if flag == 'less than':
+
+            less_than_flag = 0b00000100
+
+            # add the bit
+            self.flags |= less_than_flag
+
+            # deactivate the other 2 bits
+            self.flags &= less_than_flag
+
+    def cmp(self):
+        reg_a = self.ram[self.pc + 1]
+        reg_b = self.ram[self.pc + 2]
+
+        # we only want the comparison bit we are looking at to be on
+        if(self.reg[reg_a] == self.reg[reg_b]):
+
+            self.update_comparison_flag('equal')
+
+        elif(self.reg[reg_a] > self.reg[reg_b]):
+
+            self.update_comparison_flag('greater than')
+
+        elif(self.reg[reg_a] < self.reg[reg_b]):
+
+            self.update_comparison_flag('less than')
+
+        self.pc += self.get_the_argument_count() + 1
+
+    def jmp(self):
+        register_number = self.ram[self.pc + 1]
+
+        self.pc = self.reg[register_number]
+
+    def jeq(self):
+        register_number = self.ram[self.pc + 1]
+        equal_flag = 0b00000001
+        if self.flags & equal_flag:
+
+            self.pc = self.reg[register_number]
+        else:
+            self.pc += self.get_the_argument_count() + 1
+    def jne(self):
+        register_number = self.ram[self.pc + 1]
+        equal_flag = 0b00000001
+
+        if self.flags & equal_flag == 0b00000000:
+
+            self.pc = self.reg[register_number]
+        else:
+            self.pc += self.get_the_argument_count() + 1
     def ldi(self):
         register = self.ram[self.pc + 1]
         immediate_value = self.ram[self.pc + 2]
@@ -310,6 +387,7 @@ class CPU:
         for i in range(8):
             print(" %02X" % self.reg[i], end='')
 
+        print(f' {self.flags:>08b}')
         print()
 
     def run(self):
@@ -378,6 +456,8 @@ class CPU:
                 # the first insturction is always an opcode
                 opcode = self.ram[self.pc]
                 self.ir = opcode
+                # if counter == 10:
+                #     exit()
                 # print(f'{counter}: {self.ir:>08b}')
                 if opcode == self.hlt:
                     break
