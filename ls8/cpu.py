@@ -274,7 +274,6 @@ class CPU:
 
     def jeq(self):
         register_number = self.ram[self.pc + 1]
-        equal_flag = 0b00000001
         if self.flags & equal_flag:
 
             self.pc = self.reg[register_number]
@@ -282,7 +281,6 @@ class CPU:
             self.pc += self.get_the_argument_count() + 1
     def jne(self):
         register_number = self.ram[self.pc + 1]
-        equal_flag = 0b00000001
 
         if self.flags & equal_flag == 0b00000000:
 
