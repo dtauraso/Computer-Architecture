@@ -81,14 +81,15 @@ class CPU:
             # multiply
             multiply_opcode: self.setup_for_alu,
             add_opcode: self.setup_for_alu,
-
-            add_i_opcode: self.addi
+            add_i_opcode: self.setup_for_alu
             
 
         }
         self.alu_branch_table = {
             multiply_opcode: self.mul,
-            add_opcode: self.add
+            add_opcode: self.add,
+            add_i_opcode: self.addi
+
         }
 
         self.interrupt_vector_table = {
