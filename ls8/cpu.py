@@ -11,6 +11,11 @@ interrupt_mask = 5
 interrupt_status = 6
 stack_pointer = 7
 
+
+# flag constants
+equal_flag = 0b00000001
+greater_than_flag = 0b00000010
+less_than_flag = 0b00000100
 class CPU:
     """Main CPU class."""
 
@@ -230,34 +235,13 @@ class CPU:
         self.active_interrupts = True
 
     def update_comparison_flag(self, flag):
-        if flag == 'equal':
-            equal_flag = 0b00000001
 
-            # add the bit
-            self.flags |= equal_flag
+        # add the bit
+        self.flags |= flag
 
-            # deactivate the other 2 bits
-            self.flags &= equal_flag
+        # deactivate the other 2 bits
+        self.flags &= flag
 
-        if flag == 'greater than':
-
-            greater_than_flag = 0b00000010
-
-            # add the bit
-            self.flags |= greater_than_flag
-
-            # deactivate the other 2 bits
-            self.flags &= greater_than_flag
-    
-        if flag == 'less than':
-
-            less_than_flag = 0b00000100
-
-            # add the bit
-            self.flags |= less_than_flag
-
-            # deactivate the other 2 bits
-            self.flags &= less_than_flag
 
     def cmp(self):
         reg_a = self.ram[self.pc + 1]
@@ -266,15 +250,15 @@ class CPU:
         # we only want the comparison bit we are looking at to be on
         if(self.reg[reg_a] == self.reg[reg_b]):
 
-            self.update_comparison_flag('equal')
+            self.update_comparison_flag(equal_flag)
 
         elif(self.reg[reg_a] > self.reg[reg_b]):
 
-            self.update_comparison_flag('greater than')
+            self.update_comparison_flag(greater_than_flag)
 
         elif(self.reg[reg_a] < self.reg[reg_b]):
 
-            self.update_comparison_flag('less than')
+            self.update_comparison_flag(less_than_flag)
 
         self.pc += self.get_the_argument_count() + 1
 
